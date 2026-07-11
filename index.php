@@ -52,6 +52,11 @@ layout_header('Início', 'index');
       <p class="sub" style="margin:0 0 12px">Live · Filmes · Séries — imagens enviadas aqui aparecem no app.</p>
       <a class="btn primary" href="cards.php">Atualizar cards</a>
     </div>
+    <div class="card">
+      <h2>Atalhos de baixo</h2>
+      <p class="sub" style="margin:0 0 12px">Premiere · Novelas · Desenhos — imagem + categoria Live/Série.</p>
+      <a class="btn primary" href="shortcuts.php">Configurar atalhos</a>
+    </div>
   </div>
 
   <div class="card" style="margin-top:20px">

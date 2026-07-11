@@ -26,8 +26,8 @@ import org.json.JSONObject;
 /** Ponte app ↔ painel PHP LIBEROU. */
 public final class PanelClient {
 
-    public static String BASE_URL = "https://SEU-DOMINIO.com/liberou-panel";
-    public static String API_TOKEN = "liberou-panel-token-change-me";
+    public static String BASE_URL = "https://painel.liberoutv.online";
+    public static String API_TOKEN = "Le4lzASyjli5gJhR3D1zMjeKqMjakFLuBD0wHu0i1oZ6OZbKZEq3HcL8Alcmgjk9";
 
     private PanelClient() {}
 
@@ -101,8 +101,77 @@ public final class PanelClient {
                 downloadCard(ctx, cards.optString("series", ""), "card_series.png");
             }
 
+            // 3 atalhos de baixo: categoria + tipo + imagem
+            org.json.JSONArray shortcuts = o.optJSONArray("shortcuts");
+            if (shortcuts != null) {
+                SharedPreferences.Editor se = panelPrefs.edit();
+                for (int i = 0; i < shortcuts.length() && i < 3; i++) {
+                    JSONObject s = shortcuts.optJSONObject(i);
+                    if (s == null) {
+                        continue;
+                    }
+                    int id = s.optInt("id", i + 1);
+                    String cat = s.optString("category", "");
+                    String type = s.optString("type", "series");
+                    String img = s.optString("image", "");
+                    if (cat != null && cat.length() > 0) {
+                        se.putString("shortcut_" + id + "_cat", cat);
+                    }
+                    if (type != null && type.length() > 0) {
+                        se.putString("shortcut_" + id + "_type", type);
+                    }
+                    if (img != null && img.length() > 8) {
+                        downloadCard(ctx, img, "shortcut_" + id + ".png");
+                    }
+                }
+                se.apply();
+            }
+
             heartbeat(ctx, base);
         } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Abre atalho 1/2/3 conforme config do painel (fallback: Premiere / Novelas / Desenhos).
+     */
+    public static void openShortcut(Context ctx, int index) {
+        if (ctx == null) {
+            return;
+        }
+        String defCat = "PREMIERE";
+        String defType = "live";
+        if (index == 2) {
+            defCat = "TELENOVELAS";
+            defType = "series";
+        } else if (index == 3) {
+            defCat = "ANIMACAO";
+            defType = "series";
+        }
+        try {
+            SharedPreferences p = ctx.getSharedPreferences("liberou_panel", 0);
+            String cat = p.getString("shortcut_" + index + "_cat", defCat);
+            String type = p.getString("shortcut_" + index + "_type", defType);
+            if (cat == null || cat.length() == 0) {
+                cat = defCat;
+            }
+            if (type == null || type.length() == 0) {
+                type = defType;
+            }
+            if ("live".equalsIgnoreCase(type)) {
+                com.liberou.tv.miscelleneious.CategoryShortcut.c(ctx, cat);
+            } else {
+                com.liberou.tv.miscelleneious.CategoryShortcut.d(ctx, cat);
+            }
+        } catch (Throwable ignored) {
+            try {
+                if ("live".equalsIgnoreCase(defType)) {
+                    com.liberou.tv.miscelleneious.CategoryShortcut.c(ctx, defCat);
+                } else {
+                    com.liberou.tv.miscelleneious.CategoryShortcut.d(ctx, defCat);
+                }
+            } catch (Throwable ignored2) {
+            }
         }
     }
 
@@ -112,9 +181,14 @@ public final class PanelClient {
         }
         try {
             File dir = new File(act.getFilesDir(), "liberou_cards");
-            applyBg(act.findViewById(0x7f0b03b9), new File(dir, "card_live.png"));
-            applyBg(act.findViewById(0x7f0b058e), new File(dir, "card_movies.png"));
-            applyBg(act.findViewById(0x7f0b0188), new File(dir, "card_series.png"));
+            // cards principais
+            applyBg(act.findViewById(0x7f0b03b9), new File(dir, "card_live.png")); // live_tv
+            applyBg(act.findViewById(0x7f0b058e), new File(dir, "card_movies.png")); // on_demand
+            applyBg(act.findViewById(0x7f0b0188), new File(dir, "card_series.png")); // catch_up (séries)
+            // 3 atalhos de baixo
+            applyBg(act.findViewById(0x7f0b0228), new File(dir, "shortcut_1.png")); // epg / Premiere
+            applyBg(act.findViewById(0x7f0b055f), new File(dir, "shortcut_2.png")); // multiscreen / Novelas
+            applyBg(act.findViewById(0x7f0b06ea), new File(dir, "shortcut_3.png")); // settings / Desenhos
         } catch (Throwable ignored) {
         }
     }

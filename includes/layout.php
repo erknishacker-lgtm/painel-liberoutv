@@ -8,6 +8,7 @@ function layout_header(string $title, string $active = ''): void
         'dns' => ['dns.php', 'DNS Login'],
         'devices' => ['devices.php', 'Dispositivos'],
         'cards' => ['cards.php', 'Cards'],
+        'shortcuts' => ['shortcuts.php', 'Atalhos'],
     ];
     ?>
 <!doctype html>

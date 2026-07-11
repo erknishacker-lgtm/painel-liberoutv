@@ -1,0 +1,7 @@
+data/*.sqlite
+data/*.sqlite-*
+data/uploads/cards/*
+!data/uploads/cards/.gitkeep
+assets/cards/*
+!assets/cards/.gitkeep
+.DS_Store

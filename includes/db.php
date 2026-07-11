@@ -69,6 +69,19 @@ SQL);
         'card_series' => '',
         'force_dns' => '1',
         'panel_name' => 'LIBEROU TV Panel',
+        // 3 atalhos de baixo do dashboard
+        'shortcut_1_label' => 'Premiere',
+        'shortcut_1_cat' => 'PREMIERE',
+        'shortcut_1_type' => 'live',
+        'shortcut_1_image' => '',
+        'shortcut_2_label' => 'Novelas',
+        'shortcut_2_cat' => 'TELENOVELAS',
+        'shortcut_2_type' => 'series',
+        'shortcut_2_image' => '',
+        'shortcut_3_label' => 'Desenhos',
+        'shortcut_3_cat' => 'ANIMACAO',
+        'shortcut_3_type' => 'series',
+        'shortcut_3_image' => '',
     ];
     $stmt = $pdo->prepare('INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES (?, ?, ?)');
     $now = date('c');
