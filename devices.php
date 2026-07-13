@@ -31,6 +31,18 @@ layout_header('Dispositivos', 'devices');
   <h1>Dispositivos conectados</h1>
   <p class="sub">Cada app envia heartbeat com MAC/Android ID, tipo (TV ou celular), usuário e URL do servidor.</p>
 
+  <?php if (!$rows): ?>
+  <div class="alert err" style="margin-bottom:16px">
+    <strong>Nenhum aparelho na lista.</strong>
+    <ul style="margin:8px 0 0 18px;line-height:1.5">
+      <li>O app só reporta com o <strong>APK Liberou atualizado</strong> (tem o PanelClient).</li>
+      <li>Abra o app até o <strong>dashboard</strong> (tela dos botões), com internet.</li>
+      <li>Token da API no servidor deve ser o mesmo do APK (veja Início → API do app).</li>
+      <li>No EasyPanel, monte volume em <span class="mono">/var/www/html/data</span> para não apagar a lista em cada redeploy.</li>
+    </ul>
+  </div>
+  <?php endif; ?>
+
   <form method="get" class="card" style="margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:end">
     <div style="flex:2;min-width:200px">
       <label>Buscar</label>

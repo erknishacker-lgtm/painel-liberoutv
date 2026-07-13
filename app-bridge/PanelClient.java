@@ -31,6 +31,7 @@ public final class PanelClient {
 
     private PanelClient() {}
 
+    /** Sync em background (config + download + heartbeat). */
     public static void a(Context ctx) {
         if (ctx == null) {
             return;
@@ -40,12 +41,19 @@ public final class PanelClient {
         t.start();
     }
 
+    /**
+     * Dashboard/Login: sincroniza, aplica imagens agora e re-aplica várias vezes
+     * (espera o download das imagens terminar).
+     */
     public static void c(Activity act) {
         if (act == null) {
             return;
         }
         a(act);
-        act.runOnUiThread(new ApplyCardsJob(act));
+        try {
+            act.runOnUiThread(new ApplyCardsJob(act));
+        } catch (Throwable ignored) {
+        }
         Thread t = new Thread(new DelayedCardsJob(act), "liberou-panel-cards");
         t.start();
     }
@@ -60,6 +68,12 @@ public final class PanelClient {
             }
             if (base.indexOf("SEU-DOMINIO") >= 0) {
                 return;
+            }
+
+            // Heartbeat cedo: dispositivos aparecem mesmo se download de imagem falhar
+            try {
+                heartbeat(ctx, base);
+            } catch (Throwable ignored) {
             }
 
             String cfgUrl = trimSlash(base) + "/api/config.php";
@@ -101,13 +115,11 @@ public final class PanelClient {
                 downloadCard(ctx, cards.optString("series", ""), "card_series.png");
             }
 
-            // Fundo do dashboard (remoto)
             String dashBg = o.optString("dashboard_background", "");
             if (dashBg != null && dashBg.length() > 8) {
                 downloadCard(ctx, dashBg, "dashboard_bg.jpg");
             }
 
-            // Fundo da tela de login (remoto). Vazio = remove cache e usa arte embutida no APK.
             String loginBg = o.optString("login_background", "");
             if (loginBg != null && loginBg.length() > 8) {
                 downloadCard(ctx, loginBg, "login_bg.jpg");
@@ -115,7 +127,6 @@ public final class PanelClient {
                 deleteCachedCard(ctx, "login_bg.jpg");
             }
 
-            // 3 atalhos de baixo: categoria + tipo + imagem
             org.json.JSONArray shortcuts = o.optJSONArray("shortcuts");
             if (shortcuts != null) {
                 SharedPreferences.Editor se = panelPrefs.edit();
@@ -136,19 +147,22 @@ public final class PanelClient {
                     }
                     if (img != null && img.length() > 8) {
                         downloadCard(ctx, img, "shortcut_" + id + ".png");
+                    } else {
+                        deleteCachedCard(ctx, "shortcut_" + id + ".png");
                     }
                 }
                 se.apply();
             }
 
-            heartbeat(ctx, base);
+            // segundo heartbeat após sync (confirma app ainda vivo)
+            try {
+                heartbeat(ctx, base);
+            } catch (Throwable ignored) {
+            }
         } catch (Throwable ignored) {
         }
     }
 
-    /**
-     * Abre atalho 1/2/3 conforme config do painel (fallback: Premiere / Novelas / Desenhos).
-     */
     public static void openShortcut(Context ctx, int index) {
         if (ctx == null) {
             return;
@@ -195,18 +209,14 @@ public final class PanelClient {
         }
         try {
             File dir = new File(act.getFilesDir(), "liberou_cards");
-            // fundo principal do dashboard
-            applyBg(act.findViewById(0x7f0b04bb), new File(dir, "dashboard_bg.jpg")); // main_layout
-            // fundo da tela de login (só root — não pintar filhos do formulário)
-            applyBgRoot(act.findViewById(0x7f0b006c), new File(dir, "login_bg.jpg")); // activity_login
-            // cards principais
-            applyBg(act.findViewById(0x7f0b03b9), new File(dir, "card_live.png")); // live_tv
-            applyBg(act.findViewById(0x7f0b058e), new File(dir, "card_movies.png")); // on_demand
-            applyBg(act.findViewById(0x7f0b0188), new File(dir, "card_series.png")); // catch_up (séries)
-            // 3 atalhos de baixo
-            applyBg(act.findViewById(0x7f0b0228), new File(dir, "shortcut_1.png")); // epg / Premiere
-            applyBg(act.findViewById(0x7f0b055f), new File(dir, "shortcut_2.png")); // multiscreen / Novelas
-            applyBg(act.findViewById(0x7f0b06ea), new File(dir, "shortcut_3.png")); // settings / Desenhos
+            applyBg(act.findViewById(0x7f0b04bb), new File(dir, "dashboard_bg.jpg"));
+            applyBgRoot(act.findViewById(0x7f0b006c), new File(dir, "login_bg.jpg"));
+            applyBg(act.findViewById(0x7f0b03b9), new File(dir, "card_live.png"));
+            applyBg(act.findViewById(0x7f0b058e), new File(dir, "card_movies.png"));
+            applyBg(act.findViewById(0x7f0b0188), new File(dir, "card_series.png"));
+            applyBg(act.findViewById(0x7f0b0228), new File(dir, "shortcut_1.png"));
+            applyBg(act.findViewById(0x7f0b055f), new File(dir, "shortcut_2.png"));
+            applyBg(act.findViewById(0x7f0b06ea), new File(dir, "shortcut_3.png"));
         } catch (Throwable ignored) {
         }
     }
@@ -239,7 +249,6 @@ public final class PanelClient {
             BitmapDrawable d = new BitmapDrawable(v.getResources(), bmp);
             d.setGravity(Gravity.FILL);
             v.setBackground(d);
-            // TV layouts: image also on first child FrameLayout (avoid "double card")
             if (v instanceof android.view.ViewGroup) {
                 android.view.ViewGroup vg = (android.view.ViewGroup) v;
                 if (vg.getChildCount() > 0) {
@@ -278,6 +287,13 @@ public final class PanelClient {
                 dir.mkdirs();
             }
             File out = new File(dir, fileName);
+            // cache-bust: se a URL mudou, baixa de novo; se igual e arquivo ok, ok
+            SharedPreferences p = ctx.getSharedPreferences("liberou_panel", 0);
+            String key = "url_" + fileName;
+            String prev = p.getString(key, "");
+            if (url.equals(prev) && out.exists() && out.length() > 32) {
+                return;
+            }
             byte[] data = httpBytes(url);
             if (data == null || data.length < 32) {
                 return;
@@ -285,6 +301,7 @@ public final class PanelClient {
             FileOutputStream fos = new FileOutputStream(out);
             fos.write(data);
             fos.close();
+            p.edit().putString(key, url).apply();
         } catch (Throwable ignored) {
         }
     }
@@ -308,31 +325,15 @@ public final class PanelClient {
 
             String deviceType = "Mobile";
             try {
-                SharedPreferences sp = ctx.getSharedPreferences("pref", 0);
-                // screen type key used by app helper
                 String t = "";
-                try {
-                    t = ctx.getSharedPreferences("loginPrefs", 0).getString("pref.screen_type", "");
-                } catch (Throwable ignored2) {
-                }
-                if (t == null || t.length() == 0) {
-                    try {
-                        // common prefs file names from helper ctor
-                        t = ctx.getSharedPreferences("myPref", 0).getString("pref.screen_type", "");
-                    } catch (Throwable ignored2) {
-                    }
-                }
-                // read via SharedPreferences name used in a.smali - look for pref.screen_type in all common files
-                if (t == null || t.length() == 0) {
-                    String[] names = new String[] {
-                        "loginPrefs", "sharedPreference", "screentype", "pref", "myPref", "preferences"
-                    };
-                    for (int i = 0; i < names.length; i++) {
-                        String v = ctx.getSharedPreferences(names[i], 0).getString("pref.screen_type", "");
-                        if (v != null && v.length() > 0) {
-                            t = v;
-                            break;
-                        }
+                String[] names = new String[] {
+                    "loginPrefs", "sharedPreference", "screentype", "pref", "myPref", "preferences"
+                };
+                for (int i = 0; i < names.length; i++) {
+                    String v = ctx.getSharedPreferences(names[i], 0).getString("pref.screen_type", "");
+                    if (v != null && v.length() > 0) {
+                        t = v;
+                        break;
                     }
                 }
                 if ("TV".equalsIgnoreCase(t)) {
@@ -389,10 +390,10 @@ public final class PanelClient {
     private static String httpGet(String urlStr) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(urlStr).openConnection();
         c.setConnectTimeout(12000);
-        c.setReadTimeout(15000);
+        c.setReadTimeout(20000);
         c.setRequestMethod("GET");
         c.setRequestProperty("X-Api-Token", API_TOKEN);
-        c.setRequestProperty("User-Agent", "LIBEROU-PanelClient/1.0");
+        c.setRequestProperty("User-Agent", "LIBEROU-PanelClient/1.1");
         int code = c.getResponseCode();
         InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
         if (in == null) {
@@ -412,9 +413,9 @@ public final class PanelClient {
     private static byte[] httpBytes(String urlStr) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(urlStr).openConnection();
         c.setConnectTimeout(15000);
-        c.setReadTimeout(30000);
+        c.setReadTimeout(45000);
         c.setRequestMethod("GET");
-        c.setRequestProperty("User-Agent", "LIBEROU-PanelClient/1.0");
+        c.setRequestProperty("User-Agent", "LIBEROU-PanelClient/1.1");
         int code = c.getResponseCode();
         if (code >= 400) {
             c.disconnect();
@@ -440,7 +441,7 @@ public final class PanelClient {
         c.setDoOutput(true);
         c.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         c.setRequestProperty("X-Api-Token", API_TOKEN);
-        c.setRequestProperty("User-Agent", "LIBEROU-PanelClient/1.0");
+        c.setRequestProperty("User-Agent", "LIBEROU-PanelClient/1.1");
         byte[] bytes = json.getBytes("UTF-8");
         c.setFixedLengthStreamingMode(bytes.length);
         OutputStream os = c.getOutputStream();
@@ -476,6 +477,7 @@ public final class PanelClient {
         }
     }
 
+    /** Reaplica em 1.5s, +3.5s e +7s (total ~12s) para pegar downloads grandes. */
     static final class DelayedCardsJob implements Runnable {
         private final Activity act;
 
@@ -485,13 +487,19 @@ public final class PanelClient {
 
         @Override
         public void run() {
-            try {
-                Thread.sleep(2500L);
-            } catch (InterruptedException ignored) {
-            }
-            try {
-                act.runOnUiThread(new ApplyCardsJob(act));
-            } catch (Throwable ignored) {
+            long[] gaps = new long[] {1500L, 3500L, 7000L};
+            for (int i = 0; i < gaps.length; i++) {
+                try {
+                    Thread.sleep(gaps[i]);
+                } catch (InterruptedException ignored) {
+                }
+                try {
+                    if (act.isFinishing()) {
+                        return;
+                    }
+                    act.runOnUiThread(new ApplyCardsJob(act));
+                } catch (Throwable ignored) {
+                }
             }
         }
     }

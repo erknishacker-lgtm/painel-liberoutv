@@ -12,8 +12,22 @@ function handle_card_upload(string $field, string $settingKey): ?string
     if (empty($_FILES[$field]['name']) || (int) ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
         return null;
     }
-    if ((int) $_FILES[$field]['error'] !== UPLOAD_ERR_OK) {
-        throw new RuntimeException("Falha no upload de {$field}");
+    $errCode = (int) ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($errCode !== UPLOAD_ERR_OK) {
+        $hint = match ($errCode) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => ' (arquivo grande demais — máx. ~25MB)',
+            UPLOAD_ERR_PARTIAL => ' (upload incompleto)',
+            UPLOAD_ERR_NO_TMP_DIR => ' (pasta temp ausente no servidor)',
+            UPLOAD_ERR_CANT_WRITE => ' (servidor sem permissão de escrita)',
+            default => " (código $errCode)",
+        };
+        throw new RuntimeException("Falha no upload de {$field}{$hint}");
+    }
+    if (!is_dir(PANEL_UPLOADS) && !@mkdir(PANEL_UPLOADS, 0775, true)) {
+        throw new RuntimeException('Pasta de uploads não existe e não pôde ser criada: ' . PANEL_UPLOADS);
+    }
+    if (!is_writable(PANEL_UPLOADS)) {
+        throw new RuntimeException('Pasta de uploads sem permissão de escrita: ' . PANEL_UPLOADS);
     }
     $tmp = $_FILES[$field]['tmp_name'];
     $info = @getimagesize($tmp);
@@ -30,7 +44,7 @@ function handle_card_upload(string $field, string $settingKey): ?string
     $name = $settingKey . '_' . date('Ymd_His') . '.' . $ext;
     $dest = PANEL_UPLOADS . '/' . $name;
     if (!move_uploaded_file($tmp, $dest)) {
-        throw new RuntimeException("Não foi possível salvar {$field}");
+        throw new RuntimeException("Não foi possível salvar {$field} em {$dest}");
     }
     setting_set($settingKey, $name);
     return $name;
