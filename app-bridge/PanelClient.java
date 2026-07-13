@@ -107,6 +107,14 @@ public final class PanelClient {
                 downloadCard(ctx, dashBg, "dashboard_bg.jpg");
             }
 
+            // Fundo da tela de login (remoto). Vazio = remove cache e usa arte embutida no APK.
+            String loginBg = o.optString("login_background", "");
+            if (loginBg != null && loginBg.length() > 8) {
+                downloadCard(ctx, loginBg, "login_bg.jpg");
+            } else {
+                deleteCachedCard(ctx, "login_bg.jpg");
+            }
+
             // 3 atalhos de baixo: categoria + tipo + imagem
             org.json.JSONArray shortcuts = o.optJSONArray("shortcuts");
             if (shortcuts != null) {
@@ -189,6 +197,8 @@ public final class PanelClient {
             File dir = new File(act.getFilesDir(), "liberou_cards");
             // fundo principal do dashboard
             applyBg(act.findViewById(0x7f0b04bb), new File(dir, "dashboard_bg.jpg")); // main_layout
+            // fundo da tela de login (só root — não pintar filhos do formulário)
+            applyBgRoot(act.findViewById(0x7f0b006c), new File(dir, "login_bg.jpg")); // activity_login
             // cards principais
             applyBg(act.findViewById(0x7f0b03b9), new File(dir, "card_live.png")); // live_tv
             applyBg(act.findViewById(0x7f0b058e), new File(dir, "card_movies.png")); // on_demand
@@ -197,6 +207,22 @@ public final class PanelClient {
             applyBg(act.findViewById(0x7f0b0228), new File(dir, "shortcut_1.png")); // epg / Premiere
             applyBg(act.findViewById(0x7f0b055f), new File(dir, "shortcut_2.png")); // multiscreen / Novelas
             applyBg(act.findViewById(0x7f0b06ea), new File(dir, "shortcut_3.png")); // settings / Desenhos
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void applyBgRoot(View v, File f) {
+        if (v == null || f == null || !f.exists() || f.length() < 32) {
+            return;
+        }
+        try {
+            Bitmap bmp = BitmapFactory.decodeFile(f.getAbsolutePath());
+            if (bmp == null) {
+                return;
+            }
+            BitmapDrawable d = new BitmapDrawable(v.getResources(), bmp);
+            d.setGravity(Gravity.FILL);
+            v.setBackground(d);
         } catch (Throwable ignored) {
         }
     }
@@ -224,6 +250,19 @@ public final class PanelClient {
                         child.setBackground(d2);
                     }
                 }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void deleteCachedCard(Context ctx, String fileName) {
+        if (ctx == null || fileName == null) {
+            return;
+        }
+        try {
+            File f = new File(new File(ctx.getFilesDir(), "liberou_cards"), fileName);
+            if (f.exists()) {
+                f.delete();
             }
         } catch (Throwable ignored) {
         }

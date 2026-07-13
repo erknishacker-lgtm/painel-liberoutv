@@ -1,0 +1,2 @@
+# Bloqueia listagem; permite servir imagens de uploads/cards se o Apache mapear esta pasta.
+Options -Indexes

@@ -18,6 +18,7 @@ $live = setting_get('card_live', '');
 $movies = setting_get('card_movies', '');
 $series = setting_get('card_series', '');
 $dashboardBg = setting_get('dashboard_bg', '');
+$loginBg = setting_get('login_bg', '');
 
 $shortcuts = [];
 for ($i = 1; $i <= 3; $i++) {
@@ -36,6 +37,7 @@ json_out([
     'login_dns' => $dns,
     'force_dns' => $force,
     'dashboard_background' => card_public_url($dashboardBg),
+    'login_background' => card_public_url($loginBg),
     'cards' => [
         'live' => card_public_url($live),
         'movies' => card_public_url($movies),
