@@ -6,6 +6,34 @@ auth_check();
 
 $q = trim((string) ($_GET['q'] ?? ''));
 $type = trim((string) ($_GET['type'] ?? ''));
+$flash = '';
+$flashErr = '';
+
+// Apagar um dispositivo
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_key'])) {
+    $delKey = trim((string) $_POST['delete_key']);
+    if ($delKey !== '') {
+        $st = panel_db()->prepare('DELETE FROM devices WHERE device_key = ?');
+        $st->execute([$delKey]);
+        $flash = $st->rowCount() > 0 ? 'Dispositivo removido.' : 'Nada removido (já não existia).';
+    }
+}
+
+// Limpar testes conhecidos (demo/diag etc.)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['purge_tests'])) {
+    $st = panel_db()->prepare(<<<SQL
+DELETE FROM devices WHERE
+  lower(username) IN ('demo', 'diag')
+  OR lower(mac) IN ('aa:bb', 'test')
+  OR (lower(model) = 'test' AND lower(manufacturer) = 'test')
+  OR (lower(model) = 'mibox' AND lower(username) = 'demo')
+  OR device_key IN ('diag123', 'real-test-2')
+  OR device_key LIKE 'diag%'
+  OR device_key LIKE 'real-test%'
+SQL);
+    $st->execute();
+    $flash = 'Removidos ' . $st->rowCount() . ' registro(s) de teste.';
+}
 
 $sql = 'SELECT * FROM devices WHERE 1=1';
 $params = [];
@@ -30,6 +58,14 @@ layout_header('Dispositivos', 'devices');
 ?>
   <h1>Dispositivos conectados</h1>
   <p class="sub">Cada app envia heartbeat com MAC/Android ID, tipo (TV ou celular), usuário e URL do servidor.</p>
+
+  <?php if ($flash): ?><div class="alert ok"><?= htmlspecialchars($flash) ?></div><?php endif; ?>
+  <?php if ($flashErr): ?><div class="alert err"><?= htmlspecialchars($flashErr) ?></div><?php endif; ?>
+
+  <form method="post" style="margin-bottom:12px" onsubmit="return confirm('Remover só os registros de teste (demo/diag/MiBox demo)?');">
+    <input type="hidden" name="purge_tests" value="1">
+    <button class="btn" type="submit">Limpar dispositivos de teste</button>
+  </form>
 
   <?php if (!$rows): ?>
   <div class="alert err" style="margin-bottom:16px">
