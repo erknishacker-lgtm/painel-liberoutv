@@ -32,6 +32,16 @@ for ($i = 1; $i <= 3; $i++) {
     ];
 }
 
+$apkRaw = setting_get('app_apk_url', '');
+$apkUrl = card_public_url($apkRaw);
+// se for path local de upload de APK
+if ($apkUrl === '' && $apkRaw !== '') {
+    $apkUrl = $apkRaw;
+}
+if ($apkRaw !== '' && !str_starts_with($apkRaw, 'http') && is_file(PANEL_ROOT . '/assets/apk/' . basename($apkRaw))) {
+    $apkUrl = rtrim(PANEL_PUBLIC_URL, '/') . '/assets/apk/' . rawurlencode(basename($apkRaw));
+}
+
 json_out([
     'ok' => true,
     'login_dns' => $dns,
@@ -44,6 +54,12 @@ json_out([
         'series' => card_public_url($series),
     ],
     'shortcuts' => $shortcuts,
+    // Atualização do app (OTA)
+    'app_version_latest' => setting_get('app_version_latest', ''),
+    'app_version_min' => setting_get('app_version_min', ''),
+    'app_apk_url' => $apkUrl,
+    'app_update_message' => setting_get('app_update_message', ''),
+    'app_update_force' => setting_get('app_update_force', '0') === '1',
     'server_time' => date('c'),
     'panel' => setting_get('panel_name', 'LIBEROU TV Panel'),
 ]);

@@ -83,6 +83,13 @@ SQL);
         'shortcut_3_cat' => 'ANIMACAO',
         'shortcut_3_type' => 'series',
         'shortcut_3_image' => '',
+        // OTA
+        'app_version_latest' => '',
+        'app_version_min' => '',
+        'app_apk_url' => '',
+        'app_apk_file' => '',
+        'app_update_message' => '',
+        'app_update_force' => '0',
     ];
     $stmt = $pdo->prepare('INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES (?, ?, ?)');
     $now = date('c');

@@ -1,0 +1,4 @@
+# permitir download de APK
+<IfModule mod_mime.c>
+  AddType application/vnd.android.package-archive .apk
+</IfModule>

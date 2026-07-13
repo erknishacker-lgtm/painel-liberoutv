@@ -9,6 +9,7 @@ function layout_header(string $title, string $active = ''): void
         'devices' => ['devices.php', 'Dispositivos'],
         'cards' => ['cards.php', 'Cards'],
         'shortcuts' => ['shortcuts.php', 'Atalhos'],
+        'app_update' => ['app_update.php', 'Atualizar app'],
     ];
     ?>
 <!doctype html>
