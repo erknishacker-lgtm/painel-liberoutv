@@ -39,14 +39,24 @@ function handle_card_upload(string $field, string $settingKey): ?string
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $changed = [];
-        foreach (['card_live' => 'card_live', 'card_movies' => 'card_movies', 'card_series' => 'card_series'] as $field => $key) {
+        foreach ([
+            'card_live' => 'card_live',
+            'card_movies' => 'card_movies',
+            'card_series' => 'card_series',
+            'card_dashboard_bg' => 'dashboard_bg',
+        ] as $field => $key) {
             $n = handle_card_upload($field, $key);
             if ($n) {
                 $changed[] = $key;
             }
         }
         // URL manual alternativa
-        foreach (['url_live' => 'card_live', 'url_movies' => 'card_movies', 'url_series' => 'card_series'] as $field => $key) {
+        foreach ([
+            'url_live' => 'card_live',
+            'url_movies' => 'card_movies',
+            'url_series' => 'card_series',
+            'url_dashboard_bg' => 'dashboard_bg',
+        ] as $field => $key) {
             $url = trim((string) ($_POST[$field] ?? ''));
             if ($url !== '' && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'))) {
                 setting_set($key, $url);
@@ -54,28 +64,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         $msg = $changed
-            ? 'Cards atualizados: ' . implode(', ', array_unique($changed)) . '. O app baixa no próximo dashboard/sync.'
+            ? 'Imagens atualizadas: ' . implode(', ', array_unique($changed)) . '. O app baixa no próximo dashboard/sync.'
             : 'Nada alterado. Envie uma imagem ou URL.';
     } catch (Throwable $e) {
         $err = $e->getMessage();
     }
 }
 
+$bgVal = setting_get('dashboard_bg', '');
+$bgUrl = card_public_url($bgVal);
+
 $cards = [
-    'live' => ['key' => 'card_live', 'title' => 'Live TV', 'hint' => 'Card grande ao lado esquerdo'],
-    'movies' => ['key' => 'card_movies', 'title' => 'Filmes (On Demand)', 'hint' => 'Card de filmes'],
-    'series' => ['key' => 'card_series', 'title' => 'Séries', 'hint' => 'Card de séries / catch-up'],
+    'live' => ['key' => 'card_live', 'field' => 'card_live', 'url' => 'url_live', 'title' => 'Live TV', 'hint' => 'Card grande ao lado esquerdo'],
+    'movies' => ['key' => 'card_movies', 'field' => 'card_movies', 'url' => 'url_movies', 'title' => 'Filmes (On Demand)', 'hint' => 'Card de filmes'],
+    'series' => ['key' => 'card_series', 'field' => 'card_series', 'url' => 'url_series', 'title' => 'Séries', 'hint' => 'Card de séries / catch-up'],
 ];
 
 layout_header('Cards', 'cards');
 ?>
-  <h1>Cards dos botões do dashboard</h1>
-  <p class="sub">Envie PNG/JPG. O app baixa e aplica como fundo de Live, Filmes e Séries.</p>
+  <h1>Cards e fundo do dashboard</h1>
+  <p class="sub">Envie PNG/JPG. O app baixa e aplica no próximo abrir.</p>
 
   <?php if ($msg): ?><div class="alert ok"><?= htmlspecialchars($msg) ?></div><?php endif; ?>
   <?php if ($err): ?><div class="alert err"><?= htmlspecialchars($err) ?></div><?php endif; ?>
 
   <form method="post" enctype="multipart/form-data" class="grid 2">
+    <div class="card" style="grid-column:1/-1">
+      <h2>Fundo do dashboard</h2>
+      <p class="sub">Imagem de fundo da tela inicial (main_layout). Use 1920×1080 se possível.</p>
+      <?php if ($bgUrl): ?>
+        <img class="preview" src="<?= htmlspecialchars($bgUrl) ?>" alt="Fundo dashboard" style="max-height:280px;object-fit:cover">
+        <p class="mono"><?= htmlspecialchars($bgUrl) ?></p>
+      <?php else: ?>
+        <div class="preview" style="display:grid;place-items:center;color:var(--muted)">Usando fundo embutido no APK</div>
+      <?php endif; ?>
+      <label>Upload do fundo</label>
+      <input type="file" name="card_dashboard_bg" accept="image/*">
+      <label>Ou URL direta (https://...)</label>
+      <input type="url" name="url_dashboard_bg" placeholder="https://...">
+    </div>
+
     <?php foreach ($cards as $slug => $meta):
         $val = setting_get($meta['key'], '');
         $url = card_public_url($val);
@@ -90,13 +118,13 @@ layout_header('Cards', 'cards');
           <div class="preview" style="display:grid;place-items:center;color:var(--muted)">Sem imagem</div>
         <?php endif; ?>
         <label>Upload de imagem</label>
-        <input type="file" name="card_<?= $slug === 'live' ? 'live' : ($slug === 'movies' ? 'movies' : 'series') ?>" accept="image/*">
+        <input type="file" name="<?= htmlspecialchars($meta['field']) ?>" accept="image/*">
         <label>Ou URL direta (https://...)</label>
-        <input type="url" name="url_<?= $slug ?>" placeholder="https://...">
+        <input type="url" name="<?= htmlspecialchars($meta['url']) ?>" placeholder="https://...">
       </div>
     <?php endforeach; ?>
     <div style="grid-column:1/-1">
-      <button class="btn primary" type="submit">Salvar cards</button>
+      <button class="btn primary" type="submit">Salvar imagens</button>
     </div>
   </form>
 <?php layout_footer(); ?>

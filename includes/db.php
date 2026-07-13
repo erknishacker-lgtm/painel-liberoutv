@@ -67,6 +67,7 @@ SQL);
         'card_live' => '',
         'card_movies' => '',
         'card_series' => '',
+        'dashboard_bg' => '',
         'force_dns' => '1',
         'panel_name' => 'LIBEROU TV Panel',
         // 3 atalhos de baixo do dashboard

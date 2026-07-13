@@ -101,6 +101,12 @@ public final class PanelClient {
                 downloadCard(ctx, cards.optString("series", ""), "card_series.png");
             }
 
+            // Fundo do dashboard (remoto)
+            String dashBg = o.optString("dashboard_background", "");
+            if (dashBg != null && dashBg.length() > 8) {
+                downloadCard(ctx, dashBg, "dashboard_bg.jpg");
+            }
+
             // 3 atalhos de baixo: categoria + tipo + imagem
             org.json.JSONArray shortcuts = o.optJSONArray("shortcuts");
             if (shortcuts != null) {
@@ -181,6 +187,8 @@ public final class PanelClient {
         }
         try {
             File dir = new File(act.getFilesDir(), "liberou_cards");
+            // fundo principal do dashboard
+            applyBg(act.findViewById(0x7f0b04bb), new File(dir, "dashboard_bg.jpg")); // main_layout
             // cards principais
             applyBg(act.findViewById(0x7f0b03b9), new File(dir, "card_live.png")); // live_tv
             applyBg(act.findViewById(0x7f0b058e), new File(dir, "card_movies.png")); // on_demand
@@ -205,6 +213,18 @@ public final class PanelClient {
             BitmapDrawable d = new BitmapDrawable(v.getResources(), bmp);
             d.setGravity(Gravity.FILL);
             v.setBackground(d);
+            // TV layouts: image also on first child FrameLayout (avoid "double card")
+            if (v instanceof android.view.ViewGroup) {
+                android.view.ViewGroup vg = (android.view.ViewGroup) v;
+                if (vg.getChildCount() > 0) {
+                    View child = vg.getChildAt(0);
+                    if (child != null) {
+                        BitmapDrawable d2 = new BitmapDrawable(v.getResources(), bmp);
+                        d2.setGravity(Gravity.FILL);
+                        child.setBackground(d2);
+                    }
+                }
+            }
         } catch (Throwable ignored) {
         }
     }
