@@ -17,22 +17,30 @@ if (!api_token_ok()) {
     json_out(['ok' => false, 'error' => 'unauthorized'], 401);
 }
 
-$code = strtoupper(trim((string) ($_GET['code'] ?? $_POST['code'] ?? '')));
+$raw = trim((string) ($_GET['code'] ?? $_POST['code'] ?? ''));
+$code = strtoupper($raw);
 $code = preg_replace('/[^A-Z0-9\-_]/', '', $code) ?? '';
 
 if ($code === '' || strlen($code) < 2) {
-    json_out(['ok' => false, 'error' => 'missing_code'], 400);
+    json_out(['ok' => false, 'error' => 'missing_code', 'message' => 'Informe o código'], 400);
 }
 
 $pdo = panel_db();
+// case-insensitive match + trim
 $stmt = $pdo->prepare(
-    'SELECT code, dns_url, label, active FROM secondary_dns WHERE code = ? LIMIT 1'
+    'SELECT code, dns_url, label, active FROM secondary_dns
+     WHERE UPPER(TRIM(code)) = ? LIMIT 1'
 );
 $stmt->execute([$code]);
 $row = $stmt->fetch();
 
 if (!$row) {
-    json_out(['ok' => false, 'error' => 'not_found', 'message' => 'Código inválido'], 404);
+    json_out([
+        'ok' => false,
+        'error' => 'not_found',
+        'message' => 'Código inválido',
+        'code_received' => $code,
+    ], 404);
 }
 
 if ((int) $row['active'] !== 1) {
