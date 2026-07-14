@@ -111,17 +111,19 @@ layout_header('Dispositivos', 'devices');
             <th>IP</th>
             <th>Primeiro</th>
             <th>Último</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
         <?php if (!$rows): ?>
-          <tr><td colspan="11">Nenhum dispositivo encontrado.</td></tr>
+          <tr><td colspan="12">Nenhum dispositivo encontrado.</td></tr>
         <?php endif; ?>
         <?php foreach ($rows as $r):
             $ts = strtotime((string) $r['last_seen']);
             $isOn = $ts && ($now - $ts) <= 15 * 60;
             $t = strtolower((string) $r['device_type']);
             $badge = str_contains($t, 'tv') ? 'tv' : 'mobile';
+            $dkey = (string) ($r['device_key'] ?? '');
         ?>
           <tr>
             <td><span class="badge <?= $isOn ? 'online' : 'offline' ?>"><?= $isOn ? 'Online' : 'Offline' ?></span></td>
@@ -135,6 +137,12 @@ layout_header('Dispositivos', 'devices');
             <td class="mono"><?= htmlspecialchars((string) ($r['ip'] ?: '—')) ?></td>
             <td><?= htmlspecialchars((string) $r['first_seen']) ?></td>
             <td><?= htmlspecialchars((string) $r['last_seen']) ?></td>
+            <td>
+              <form method="post" style="margin:0" onsubmit="return confirm('Remover este dispositivo da lista?');">
+                <input type="hidden" name="delete_key" value="<?= htmlspecialchars($dkey) ?>">
+                <button class="btn" type="submit" style="padding:4px 10px;font-size:12px">Apagar</button>
+              </form>
+            </td>
           </tr>
         <?php endforeach; ?>
         </tbody>

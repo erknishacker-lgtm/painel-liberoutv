@@ -3,8 +3,9 @@
 Painel PHP para controlar o app Android:
 
 1. **DNS principal de login**
-2. **Dispositivos** (MAC / Android ID, TV ou celular, usuário, servidor)
-3. **Cards** do dashboard (Live, Filmes, Séries)
+2. **DNS secundários por código** (brinde/revenda — o cliente digita código, não a DNS)
+3. **Dispositivos** (MAC / Android ID, TV ou celular, usuário, servidor)
+4. **Cards** do dashboard (Live, Filmes, Séries)
 
 ## Requisitos
 
@@ -34,6 +35,7 @@ Painel PHP para controlar o app Android:
 |----------|--------|--------|
 | `/api/config.php` | GET | DNS + URLs dos cards |
 | `/api/heartbeat.php` | POST | Reporta dispositivo |
+| `/api/dns_code.php?code=XXX` | GET | Resolve código → DNS secundária |
 
 Header: `X-Api-Token: <API_TOKEN>`
 

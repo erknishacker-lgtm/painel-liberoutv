@@ -6,6 +6,7 @@ function layout_header(string $title, string $active = ''): void
     $links = [
         'index' => ['index.php', 'Início'],
         'dns' => ['dns.php', 'DNS Login'],
+        'secondary_dns' => ['secondary_dns.php', 'DNS secundários'],
         'devices' => ['devices.php', 'Dispositivos'],
         'cards' => ['cards.php', 'Cards'],
         'shortcuts' => ['shortcuts.php', 'Atalhos'],

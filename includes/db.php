@@ -59,6 +59,16 @@ CREATE TABLE IF NOT EXISTS admin_users (
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS secondary_dns (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT NOT NULL UNIQUE,
+  dns_url TEXT NOT NULL,
+  label TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 SQL);
 
     // defaults

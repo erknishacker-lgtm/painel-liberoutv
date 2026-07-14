@@ -5,8 +5,12 @@ require_once __DIR__ . '/db.php';
 
 function auth_check(): void
 {
-    if (empty($_SESSION['admin_id'])) {
-        header('Location: login.php');
+    if (empty($_SESSION['admin_id'] ?? null)) {
+        if (!headers_sent()) {
+            header('Location: login.php');
+        } else {
+            echo '<p>Sessão expirada. <a href="login.php">Entrar de novo</a>.</p>';
+        }
         exit;
     }
 }

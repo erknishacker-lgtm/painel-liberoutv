@@ -9,13 +9,23 @@ RUN apt-get update \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
-# Uploads grandes (cards / fundos / APK)
+# Uploads grandes (cards / fundos / APK Liberou ~37–50MB)
+# 36M era o limite antigo e estourava com o APK real (~38.7MB).
+# display_errors=Off evita warning "headers already sent" quando POST estoura.
 RUN printf '%s\n' \
-    'upload_max_filesize=32M' \
-    'post_max_size=36M' \
-    'memory_limit=256M' \
-    'max_execution_time=180' \
-    > /usr/local/etc/php/conf.d/liberou-uploads.ini
+    'upload_max_filesize=200M' \
+    'post_max_size=220M' \
+    'memory_limit=512M' \
+    'max_execution_time=600' \
+    'max_input_time=600' \
+    'display_errors=Off' \
+    'log_errors=On' \
+    'error_reporting=E_ALL' \
+    > /usr/local/etc/php/conf.d/liberou-uploads.ini \
+    && printf '%s\n' \
+    'LimitRequestBody 230686720' \
+    > /etc/apache2/conf-available/liberou-upload.conf \
+    && a2enconf liberou-upload
 
 WORKDIR /var/www/html
 

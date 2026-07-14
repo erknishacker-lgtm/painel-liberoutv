@@ -65,6 +65,11 @@ layout_header('Início', 'index');
       <a class="btn primary" href="dns.php">Alterar DNS</a>
     </div>
     <div class="card">
+      <h2>DNS secundários (códigos)</h2>
+      <p class="sub" style="margin:0 0 14px">Brinde / revenda: o cliente digita um código; o painel resolve a DNS.</p>
+      <a class="btn primary" href="secondary_dns.php">Gerenciar códigos</a>
+    </div>
+    <div class="card">
       <h2>Cards e fundo</h2>
       <p class="sub" style="margin:0 0 14px">Live · Filmes · Séries · fundo do dashboard.</p>
       <a class="btn primary" href="cards.php">Atualizar imagens</a>

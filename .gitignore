@@ -1,0 +1,4 @@
+data/*.sqlite
+data/*.sqlite-*
+assets/apk/*.apk
+.DS_Store

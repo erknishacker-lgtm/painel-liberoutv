@@ -27,14 +27,17 @@ define(
 define('ADMIN_USER', 'admin');
 define('ADMIN_PASS_HASH', password_hash('admin123', PASSWORD_DEFAULT));
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
+// Se o PHP já emitiu warning (ex.: POST > post_max_size), headers já foram
+// enviados — session_start() não pode rodar e não deve quebrar a página.
+if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
     session_start();
 }
 
 date_default_timezone_set('America/Sao_Paulo');
 
 // Garante pastas graváveis (Docker/EasyPanel)
-foreach ([PANEL_DATA, PANEL_UPLOADS] as $dir) {
+define('PANEL_APK_DIR', PANEL_ROOT . '/assets/apk');
+foreach ([PANEL_DATA, PANEL_UPLOADS, PANEL_APK_DIR] as $dir) {
     if (!is_dir($dir)) {
         @mkdir($dir, 0775, true);
     }
